@@ -105,6 +105,7 @@ app.post('/api/persons', (req,res) => {
         content: person.content
     }
     persons = [...persons, newPerson]
+    res.status(200).send(persons)
     //console.log(persons)
 
 
@@ -123,7 +124,6 @@ app.post('/api/persons', (req,res) => {
         console.log(newPerson)
         persons = [...persons,newPerson]
         
-        res.status(200).send(persons)
     */
 })
 
