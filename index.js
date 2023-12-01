@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 //let persons = require('./db')
-const PORT = 3001
+const PORT = process.env.PORT ||3001
 var morgan = require('morgan')
 const cors = require('cors')
 
@@ -126,7 +126,7 @@ app.post('/api/persons', (req,res) => {
         res.status(200).send(persons)
     */
 })
- 
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
