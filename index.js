@@ -105,7 +105,7 @@ app.post('/api/persons', (req,res) => {
         content: person.content
     }
     persons = [...persons, newPerson]
-    res.status(200).send(persons)
+    res.status(200).json(persons)
     //console.log(persons)
 
 
