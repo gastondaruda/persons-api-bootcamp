@@ -89,7 +89,7 @@ app.post('/api/persons', (req,res) => {
                 res.json(savedPerson)
             })
         } else{
-            res.json("This person already exists....")
+            res.json("This person already exist...")
         } 
     })
 
