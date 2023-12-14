@@ -1,49 +1,18 @@
+require('./')
 const express = require('express')
 const app = express()
-//let persons = require('./db')
-const PORT = process.env.PORT ||3001
 var morgan = require('morgan')
 const cors = require('cors')
+const mongoose = require('mongoose')
+const connectDB = require('./db/mongo')
+const Person = require('./models/Person')
+const notFound = require('./middleware/notFound')
+const handleError = require('./middleware/handleError')
 
-app.use(express.json())
 app.use(cors())
+app.use(express.json())
 //exercise 3.7
 //app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data'))
-
-
-//let personArr = persons.persons
-
-let persons = [
-    {
-    name: "Arto Hella",
-    number: "040-123456",
-    id: 1
-    },
-    {
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-    id: 2
-    },
-    {name: "Dan Abramov",
-    number: "12-43-234345",
-    id: 3
-    },
-    {
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-    id: 4
-    },
-    {
-    name: "Gasty",
-    number: "789",
-    id: 6
-    },
-    {
-    name: "Guada",
-    number: "555",
-    id: 7
-    }
-]
 
 
 app.get('/', (request, response) => {
@@ -52,7 +21,11 @@ app.get('/', (request, response) => {
     
     //exercise 3.1
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    
+    Person.find({}).then(person => {
+        res.json(person)
+    })
+    //mongoose.connection.close()
 })
 
 //exercise 3.2
@@ -68,68 +41,89 @@ app.get('/info', (req, res) => {
 
 
 //exercise 3.3
-app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    person = persons.find(p => p.id === id)
+app.get('/api/persons/:id', (req, res, next) => {
+    const id = req.params.id
+    
+    Person.findById(id)
+        .then(person => {
+            if(person){
 
-    if(person) {
-        res.send(person)
-    } else {
-        return res.status(400).json({ 
-            error: 'error, exercise 3.6' 
+                res.json(person)
+            }else {
+                res.status(404).end()
+            }
         })
-    }
+        .catch(err => {
+            next(err)
+        })
 })
 
 //exercise 3.4
-app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(p => p.id !== id)
-    console.log(persons)
-    res.status(204).end()
+app.delete('/api/persons/:id', (req, res, next) => {
+    const {id} = req.params
+    
+    Person.findByIdAndDelete(id).then(result => {
+        res.status(204).end()
+    }).catch(err => {
+        next(err)
+    })
 })
 
-//exercise 3.5
+//exercise 3.19
 app.post('/api/persons', (req,res) => {
     const person = req.body
 
-    console.log("index.js")
-    const ids = persons.map(p => p.id)
-    const maxId = Math.max(...ids)
-
-    let nameExist = persons.find(person => person.name === person.name)
-    const newPerson = {
-        name: person.name,
-        number: person.number,
-        id: maxId + 1,
-        content: person.content
+    if (!person) {
+        return res.status(400).json({ err: "error content" })
     }
-    persons = [...persons, newPerson]
-    res.status(200).json(persons)
-    //console.log(persons)
 
+    
+    const newPerson = new Person({
+        name: person.name,
+        number: person.number
+    })
 
-    /*if(person.name === "" || person.number === "" || nameExist){
-        return res.status(400).json({ 
-            error: 'error, exercise 3.6' 
-        })
-    }else {  
-        const newPerson = {
-            name: person.name,
-            number: person.number,
-            id: maxId + 1,
-            content: person.content
-        }
-        
-        console.log(newPerson)
-        persons = [...persons,newPerson]
-        
-    */
+    Person.find({name: newPerson.name}).then(person => {
+        if(person.length === 0){
+            newPerson.save().then(savedPerson => {
+                res.json(savedPerson)
+            })
+        } else{
+            res.json("This person already exists....")
+        } 
+    })
+
+    
+    })
+
+//update-------------------------
+app.put('/api/persons/:id', (req, res, next) => {
+    const {id} = req.params
+    const person = req.body
+
+    const updatePerson = {
+        name: person.name,
+        number: person.number
+    }
+
+    Person.findByIdAndUpdate(id, updatePerson, {new:true})
+    .then(result => {
+        res.json(result)
+    })
 })
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
-})
+app.use(notFound)
+app.use(handleError)
 
+const start = async () => {
+    try{
+        connectDB(process.env.MONGO_URI)
+        app.listen(process.env.PORT, console.log(`Server is listening port ${process.env.PORT}...`))
+    }catch(err){
+        console.log(err)
+    }
+}
+
+start()
 
 //{} []
